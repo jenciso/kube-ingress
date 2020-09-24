@@ -1,0 +1,84 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-ingress-controller-external
+  namespace: ingress-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ingress-nginx-external
+  template:
+    metadata:
+      labels:
+        app: ingress-nginx-external
+      annotations:
+        prometheus.io/port: '10254'
+        prometheus.io/scrape: 'true'
+    spec:
+      serviceAccountName: nginx-ingress-serviceaccount
+      tolerations:
+        - key: node-role.kubernetes.io/infra
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/infra
+                  operator: In
+                  values: ["true"]
+      containers:
+        - name: nginx-ingress-controller
+          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.22.0
+          args:
+            - /nginx-ingress-controller
+            - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
+            - --default-ssl-certificate=$(POD_NAMESPACE)/tls-wildcard--docs-planet
+            - --election-id=ingress-controller-leader-external
+            - --ingress-class=nginx-external
+            - --configmap=$(POD_NAMESPACE)/nginx-configuration-external
+            - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services-external
+            - --udp-services-configmap=$(POD_NAMESPACE)/udp-services-external
+            - --annotations-prefix=nginx.ingress.kubernetes.io
+            - --enable-ssl-chain-completion=false
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+          - name: http
+            containerPort: 80
+          - name: https
+            containerPort: 443
+          volumeMounts: 
+            - mountPath: /etc/nginx-ssl/dhparam
+              name: tls-dhparam-vol
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+      volumes: 
+        - name: tls-dhparam-vol
+          secret: 
+            secretName: tls-dhparam
