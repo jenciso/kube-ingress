@@ -11,6 +11,12 @@ openssl dhparam -out ssl-certs/dhparam.pem 4096
 kubectl create secret generic tls-dhparam --from-file=ssl-certs/dhparam.pem -n ingress-nginx
 ```
 
+Additional config
+```shell
+kubectl apply -f k8s/default-backend.yaml
+kubectl apply -f k8s/rbac.yaml
+```
+
 ## Internal Ingress
 
 ```shell
@@ -19,8 +25,6 @@ kubectl create secret tls  tls-wildcard--paas --key ssl-certs/paas-lab.docs-plan
 
 ```shell
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/default-backend.yaml
-kubectl apply -f k8s/rbac.yaml
 kubectl apply -f k8s/service-nodeport.yaml
 kubectl apply -f k8s/with-rbac-ssl-default.yaml
 ```
