@@ -1,8 +1,8 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
-  namespace: ingress-nginx 
+  namespace: ingress-nginx
 spec:
   replicas: 2
   selector:
@@ -54,7 +54,7 @@ spec:
             containerPort: 80
           - name: https
             containerPort: 443
-          volumeMounts: 
+          volumeMounts:
             - mountPath: /etc/nginx-ssl/dhparam
               name: tls-dhparam-vol
           livenessProbe:
@@ -76,7 +76,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-      volumes: 
+      volumes:
         - name: tls-dhparam-vol
-          secret: 
+          secret:
             secretName: tls-dhparam
